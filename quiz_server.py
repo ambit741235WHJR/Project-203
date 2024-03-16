@@ -9,7 +9,7 @@ SOCK_STREAM = socket.SOCK_STREAM
 sock = socket.socket(AF_INET, SOCK_STREAM)
 
 # Bind the socket to the port
-ip_address = '52.140.125.45'
+ip_address = '127.0.0.1'
 port = 8000
 
 sock.bind((ip_address, port))
@@ -17,6 +17,9 @@ sock.listen()
 
 # Create a list of clients
 clients = []
+
+# Create a list of nicknames
+nicknames = []
 
 # Print that the server is running
 print("Server is running...")
@@ -81,32 +84,43 @@ def remove(client):
     if client in clients:
         clients.remove(client)
 
-def clientthread(conn):
+def remove_nickname(nickname):
+    # Remove nickname from list of nicknames
+    if nickname in nicknames:
+        nicknames.remove(nickname)
+
+def clientthread(conn,nickname):
     score = 0
     conn.send("Welcome to the quiz!".encode('utf-8'))
-    conn.send("You will be asked 10 questions. Each question is worth 1 point.".encode('utf-8'))
+    conn.send(f"You will be asked {len(answers)} questions. Each question is worth 1 point.".encode('utf-8'))
     conn.send("Good luck!\n\n".encode('utf-8'))
     index, question, answer = get_random_question_answer(conn)
 
     while True:
         try:
-            msg = conn.recv(1024).decode('utf-8')
+            msg = conn.recv(2048).decode('utf-8')
             if msg:
                 if msg.lower() == answer:
                     score += 1
-                    conn.send("Correct!\n".encode('utf-8'))
+                    conn.send(f"Correct! Your score is {score}\n".encode('utf-8'))
                 else:
                     conn.send("Incorrect!\n".encode('utf-8'))
                 remove_question(index)
                 index, question, answer = get_random_question_answer(conn)
+                print(answer)
             else:
                 remove(conn)
-        except:
+                remove_nickname(nickname)
+        except Exception as e:
+            print(str(e))
             continue
 
 while True:
     conn, addr = sock.accept()
+    conn.send('NICKNAME'.encode('utf-8'))
+    nickname = conn.recv(2048).decode('utf-8')
     clients.append(conn)
-    print(addr[0] + " connected")
-    thread = Thread(target = clientthread, args = (conn))
+    nicknames.append(nickname)
+    print(nickname + " connected")
+    thread = Thread(target = clientthread, args = (conn,nickname))
     thread.start()
