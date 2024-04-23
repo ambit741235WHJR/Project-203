@@ -68,12 +68,17 @@ questions = [
 answers = ['a', 'c', 'c', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'a', 'a', 'a', 'a']
 
 def get_random_question_answer(conn):
-    # Get a random question and answer
-    random_index = random.randint(0, len(questions) - 1)
-    question = questions[random_index]
-    answer = answers[random_index]
-    conn.send(question.encode('utf-8'))
-    return random_index, question, answer
+    # Check whether there are any questions left
+    if len(questions) == 0:
+        conn.send("No questions left!".encode('utf-8'))
+        return None, None, None
+    else:
+        # Get a random question and answer
+        random_index = random.randint(0, len(questions) - 1)
+        question = questions[random_index]
+        answer = answers[random_index]
+        conn.send(question.encode('utf-8'))
+        return random_index, question, answer
 
 def remove_question(index):
     questions.pop(index)
@@ -107,6 +112,9 @@ def clientthread(conn,nickname):
                     conn.send("Incorrect!\n".encode('utf-8'))
                 remove_question(index)
                 index, question, answer = get_random_question_answer(conn)
+                if question is None:
+                    conn.send(f" Your final score is {score}\n".encode('utf-8'))
+                    break
                 print(answer)
             else:
                 remove(conn)
